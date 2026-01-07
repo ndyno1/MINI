@@ -7,7 +7,7 @@ import time
 # Récupération sécurisée via les Secrets GitHub
 API_KEY = os.getenv('BINANCE_API_KEY')
 SECRET_KEY = os.getenv('BINANCE_SECRET_KEY')
-GOOGLE_URL = os.getenv('GOOGLE_SCRIPT_URL')
+GOOGLE_URL = os.getenv('https://script.google.com/macros/s/AKfycbyCvuy-WiLMlAkBb7k6YyPVMk4lQhGGke05heSWSw--twKE2L-oVSOs884g3jn6lt6m/exec')
 
 def get_binance_pay_history():
     url = "https://api.binance.com/sapi/v1/pay/transactions"
